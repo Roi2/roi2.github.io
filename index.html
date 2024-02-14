@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversation Manager</title>
+    <script src="https://unpkg.com/vue@3"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        #app {
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 250px;
+            background: #f0f0f0;
+            padding: 20px;
+            height: 100%;
+            overflow-y: auto;
+        }
+        .conversation-item {
+            cursor: pointer;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .conversation-item:hover {
+            background-color: #e0e0e0;
+        }
+        .content {
+            flex-grow: 1;
+            padding: 20px;
+        }
+        .modal {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            width: 300px;
+        }
+        .button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px 0;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .file-input {
+            margin-bottom: 10px;
+        }
+        textarea {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="sidebar">
+            <div 
+              v-for="(conversation, index) in conversations" 
+              :key="index" 
+              class="conversation-item"
+              @click="selectConversation(index)"
+            >
+                {{ conversation.name }}
+                <button @click.stop="deleteConversation(index)">Delete</button>
+            </div>
+            <button class="button" @click="openModal()">New Conversation</button>
+        </div>
+        <div class="content">
+            <div v-if="selectedConversation >= 0">
+                <h3>{{ conversations[selectedConversation].name }}</h3>
+                <div v-if="!editMode">
+                    <p>{{ conversations[selectedConversation].text }}</p>
+                    <button class="button" @click="editConversation(selectedConversation)">Edit</button>
+                </div>
+                <div v-if="editMode">
+                    <textarea v-model="editableText"></textarea>
+                    <button class="button" @click="saveEdit(selectedConversation)">Save</button>
+                    <button class="button" @click="cancelEdit()">Cancel</button>
+                </div>
+            </div>
+            <div v-else>
+                Selected Conversation: None
+            </div>
+        </div>
+        <div class="modal" v-show="showModal">
+            <div class="modal-content">
+                <h2>Create New Conversation</h2>
+                <input type="file" class="file-input" @change="handleFileUpload" />
+                <textarea v-model="newConversationText" placeholder="Enter text"></textarea>
+                <button class="button" @click="createConversation">Create</button>
+                <button class="button" @click="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+<script>
+  const app = Vue.createApp({
+    data() {
+      return {
+        showModal: false,
+        newConversationFile: null,
+        newConversationText: '',
+        editableText: '',
+        editMode: false,
+        conversations: [],
+        selectedConversation: -1,
+      };
+    },
+    methods: {
+      openModal() {
+        this.showModal = true;
+        this.newConversationFile = null;
+        this.newConversationText = '';
+      },
+      closeModal() {
+        this.showModal = false;
+      },
+      handleFileUpload(event) {
+        this.newConversationFile = event.target.files[0];
+        this.newConversationText = ''; // Clear text area when file is selected
+      },
+      createConversation() {
+        if (this.newConversationFile || this.newConversationText) {
+          const conversationName = this.newConversationFile ? this.newConversationFile.name : `Text - ${this.conversations.length + 1}`;
+          this.conversations.push({
+            name: conversationName,
+            text: this.newConversationText || "Uploaded File (not displayed)",
+            file: this.newConversationFile,
+          });
+          this.closeModal();
+        }
+      },
+      selectConversation(index) {
+        this.selectedConversation = index;
+        this.editableText = this.conversations[index].text;
+        this.editMode = false;
+      },
+      deleteConversation(index) {
+        this.conversations.splice(index, 1);
+        if (index === this.selectedConversation) {
+          this.selectedConversation = -1; // Deselect if the current conversation is deleted
+        }
+      },
+      editConversation() {
+        this.editMode = true;
+      },
+      saveEdit() {
+        if (this.selectedConversation >= 0) {
+          this.conversations[this.selectedConversation].text = this.editableText;
+          this.editMode = false;
+        }
+      },
+      cancelEdit() {
+        this.editableText = this.conversations[this.selectedConversation].text;
+        this.editMode = false;
+      }
+    },
+  }).mount('#app');
+</script>
+</body>
+</html>
